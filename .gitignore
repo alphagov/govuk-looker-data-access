@@ -10,3 +10,10 @@ usage-data-config.json
 # General ignores
 .DS_Store
 .idea
+
+# Python
+.venv/
+__pycache__
+
+# Env
+.env

@@ -2,10 +2,16 @@
   "scripts": {
     "dev": "govuk-prototype-kit dev",
     "serve": "govuk-prototype-kit serve",
-    "start": "govuk-prototype-kit start"
+    "start": "govuk-prototype-kit start",
+    "postinstall": "npm run copy-assets",
+    "copy-assets": "cp node_modules/@looker/embed-sdk/dist/main.js app/assets/javascripts/looker-embed.esm.js"
   },
   "dependencies": {
     "@govuk-prototype-kit/common-templates": "2.0.1",
+    "@looker/embed-sdk": "^2.0.6",
+    "@looker/sdk": "^25.16.0",
+    "@looker/sdk-node": "^25.16.0",
+    "dotenv": "^17.2.3",
     "govuk-frontend": "5.12.0",
     "govuk-prototype-kit": "13.18.1"
   }

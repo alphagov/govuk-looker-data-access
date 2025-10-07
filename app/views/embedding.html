@@ -1,0 +1,123 @@
+{# File: app/views/embedding.html (FINAL WORKING VERSION) #}
+
+{% extends "layouts/main.html" %}
+
+{% block pageTitle %}
+  Embedding a Looks and Dashboards – {{ serviceName }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+
+      <h1 class="govuk-heading-l">
+        Embedding Looks and Dashboards with the Embed SDK
+      </h1>
+
+      <p>
+        If you are interested in showing visualisations built in Looker rather than just pulling metrics then embedding may be more appropriate.
+        You can present Looks and Dashboards to the user and these can includes filters to allow interactivity.
+        However, most of the configuration for what is allowable happens in the Looker instance (Admin -> Platform -> Embed).
+        The embedding application is relatively limited in how it presents that information.
+      </p>
+
+      <h2 class="govuk-heading-m">
+        Public Embedding
+      </h2>
+
+      <p>
+        If you have something that is genuinely intended to be accessible by anyone on the internet then embedding is very simple.
+        There is an administrative setting in Looker that will control whether content is allowed to be made public 
+        (Admin -> General -> Settings -> Data Policy -> "Public URLs").
+        If so, an individual look/dashboard can then have "Public Access" enabled. A URL will be generated which can be embedded within external sites or applications.
+        <br>TODO: check whether domain allowlists apply
+      </p>
+
+      <h2 class="govuk-heading-m">
+        Private Embedding
+      </h2>
+
+      <p>
+        If your use-case is to make content available to users with a Looker account then you can embed content within a iframe.
+        This will require the user to be signed in to Looker.
+        Both Private and Signed Embedding require admin settings in the Looker instance to explicitly allow embedding a specific domain.
+        This may be configured in Admin -> Platform -> Embed -> "Embedded Domain Allowlist".
+      </p>
+      <div>
+        <iframe src="https://gds.cloud.looker.com/embed/looks/7" width="400" height="300" style="border:0;"></iframe>
+      </div>
+
+      <div>
+        <iframe src="https://gds.cloud.looker.com/embed/dashboards/6?Wave+Name=" width="1200" height="600" style="border:0;"></iframe>
+      </div>
+
+      <!-- <div>
+        <iframe src=https://gds.cloud.looker.com/embed/explore/govuk/govuk?toggle=fil&theme=demo" width="1200" height="600" style="border:0;"><</iframe>
+      </div> -->
+        
+
+      <h2 class="govuk-heading-m">
+        Signed Embedding
+      </h2>
+
+      {% if error %}
+        <div class="govuk-error-summary">
+          <h2 class="govuk-error-summary__title">There is a problem</h2>
+          <p>{{ error }}</p>
+        </div>
+      {% else %}
+        <p class="govuk-body">
+          The Look below is rendered in a secure iframe.
+        </p>
+
+        <div id="look-container"
+             data-looker-host="{{ lookerHost }}"
+             style="border: 1px solid #b1b4b6;"></div>
+      {% endif %}
+
+    </div>
+  </div>
+{% endblock %}
+
+{% block pageScripts %}
+  <script type="module">
+    // --- THE FINAL, CORRECTED SCRIPT ---
+
+    // 1. Import the module for its "side effect", which creates window.LookerEmbedSDK
+    import '/public/javascripts/looker-embed.esm.js';
+
+    document.addEventListener('DOMContentLoaded', function () {
+      try {
+        // 2. Access the factory function from within the global object.
+        const getEmbedSDK = window.LookerEmbedSDK.getEmbedSDK;
+
+        // 3. Call the factory function to get the actual, usable SDK object.
+        const LookerEmbedSDK = getEmbedSDK();
+
+        // 4. The rest of the code will now work perfectly.
+        const lookContainer = document.getElementById('look-container');
+        if (!lookContainer) return;
+
+        const lookerHost = lookContainer.dataset.lookerHost;
+
+        if (lookerHost) {
+          LookerEmbedSDK.init(lookerHost, '/looker-auth');
+          LookerEmbedSDK.createLookWithId('2')
+            .appendTo(lookContainer)
+            .withDynamicIFrameHeight()
+            .build()
+            .connect()
+            .then(look => {
+              console.log('SUCCESS: The Look has finally been embedded correctly.');
+            })
+            .catch(error => {
+              console.error('CLIENT-SIDE ERROR:', error);
+            });
+        }
+      } catch (e) {
+        console.error('A critical error occurred initializing the SDK. The structure may be incorrect.', e);
+        console.log('Inspecting window.LookerEmbedSDK for debugging:', window.LookerEmbedSDK);
+      }
+    });
+  </script>
+{% endblock %}

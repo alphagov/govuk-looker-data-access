@@ -1,16 +1,37 @@
-{#
-For guidance on how to use layouts see:
-https://prototype-kit.service.gov.uk/docs/how-to-use-layouts
-#}
+{# File: app/views/layouts/main.html #}
 
+{# 1. This file now extends the main GOV.UK branded layout #}
 {% extends "govuk-prototype-kit/layouts/govuk-branded.njk" %}
+
+{# 2. Import the service navigation component #}
 {% from "govuk/components/service-navigation/macro.njk" import govukServiceNavigation %}
 
+{# 3. Define the 'header' block, which the parent layout is expecting #}
 {% block header %}
 
+    {# This renders the main black GOV.UK header bar #}
     {{ govukHeader() }}
+
+    {# This renders your service navigation with all your links #}
     {{ govukServiceNavigation({
-        serviceName: serviceName
+        serviceName: serviceName,
+        navigation: [
+          {
+            href: "/using-an-explore",
+            text: "Using a Looker Explore",
+            active: true if currentPage === "using-an-explore"
+          },
+          {
+            href: "/using-a-look",
+            text: "Using a Looker Look",
+            active: true if currentPage === "using-a-look"
+          },
+          {
+            href: "/embedding",
+            text: "Embedding Looks and Dashboards",
+            active: true if currentPage === "embedding"
+          }
+        ]
     })}}
 
 {% endblock %}

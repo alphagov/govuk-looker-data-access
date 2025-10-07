@@ -1,20 +1,31 @@
 {% extends "layouts/main.html" %}
 
-{% set pageName="Home" %}
-
 {% block content %}
 
-<div class="govuk-grid-row">
-  <div class="govuk-grid-column-two-thirds">
+<h1 class="govuk-heading-l">
+  Code Examples
+</h1>
+<p>
+  This site provides some basic examples of the various ways to interact with data in Looker.
+  See the README.md for further discussion about about trade-offs of each approach.
+</p>
 
-    {% include "govuk-prototype-kit/includes/homepage-top.njk" %}
-
-    <h1 class="govuk-heading-xl">
-      {{ serviceName }}
-    </h1>
-
-    {% include "govuk-prototype-kit/includes/homepage-bottom.njk" %}
-  </div>
-</div>
+<ul class="govuk-list govuk-list--bullet">
+  <li>
+    <a class="govuk-link" href="">
+      Using a Looker Explore
+    </a>
+  </li>
+  <li>
+    <a class="govuk-link" href="">
+      Using a Looker Look
+    </a>
+  </li>
+  <li>
+    <a class="govuk-link" href="">
+      Embedding Looks and Dashboards
+    </a>
+  </li>
+</ul>
 
 {% endblock %}

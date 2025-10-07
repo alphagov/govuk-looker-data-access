@@ -1,0 +1,240 @@
+{% extends "layouts/main.html" %}
+
+{% set pageName="using-an-explore" %}
+
+{% block pageTitle %}
+  Using an Explore – {{ serviceName }} – GOV.UK Prototype Kit
+{% endblock %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:window.history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <h1 class="govuk-heading-l">
+        Examples using a Looker Explore
+      </h1>
+
+      <h2 class="govuk-heading-m">
+        Metric from an Explore
+      </h2>
+      <p>
+        This is using the run_inline_query function to query a measure from the govuk Explore.
+      </p>
+      <pre><code>
+        const query = await sdk.run_inline_query({
+          result_format: 'json_detail',
+          body: {
+            model: 'govuk',
+            view: 'govuk',
+            fields: ['govuk.sessions'],
+            filters: { 'govuk.event_date': looker_date_filter },
+            total: false,
+          },
+        });
+      </code></pre>
+
+      {% if ga4MetricFromExploreLast30Days %}
+        <p>
+          Sessions in last 30 days: {{ ga4MetricFromExploreLast30Days['govuk.sessions'].rendered }}
+        </p>
+      {% endif %}
+
+
+      <h2 class="govuk-heading-m">
+        Comparison from an Explore
+      </h2>
+      <p>
+        Running a comparison directly on an Explore means either getting a time-series of the metric or querying two distinct time-ranges and comparing them. For a rolling window like last 30 days, comparing two values seems more straight forward.
+      </p>
+
+      {% if ga4MetricFromExploreLast30Days and ga4MetricFromExploreLast30DaysPreviousPeriod %}
+        <p>
+          Sessions in last 30 days: {{ ga4MetricFromExploreLast30Days['govuk.sessions'].rendered }}<br>
+          Sessions in previous period: {{ ga4MetricFromExploreLast30DaysPreviousPeriod['govuk.sessions'].rendered }}<br>
+          Difference: {{ ga4MetricFromExploreLast30Days['govuk.sessions'].value - ga4MetricFromExploreLast30DaysPreviousPeriod['govuk.sessions'].value }}
+        </p>
+      {% endif %}
+
+
+      <h2 class="govuk-heading-m">
+        Time-series from an Explore
+      </h2>
+      <p>
+        Getting a time-series is straight-forward if you include a date dimension.
+        The result is still an array as for a single-field metric but will have multiple elements.
+      </p>
+      <pre><code>
+        const query = await sdk.run_inline_query({
+          result_format: 'json_detail',
+          body: {
+            model: 'govuk',
+            view: 'govuk',
+            fields: [
+              'govuk.sessions',
+              'govuk.event_date' <-- same query as for a single metric but with added date dimension
+            ],
+            filters: { 'govuk.event_date': looker_date_filter },
+            total: false,
+          },
+        });
+      </code></pre>
+      {% if ga4SeriesFromExplore %}
+        <table class="govuk-table">
+            <thead class="govuk-table__head">
+              <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Date</th>
+                <th scope="col" class="govuk-table__header govuk-table__header--numeric">Sessions</th>
+              </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+              {% for row in ga4SeriesFromExplore %}
+                <tr class="govuk-table__row">
+                  <td class="govuk-table__cell">{{ row['govuk.event_date'].value }}</td>
+                  <td class="govuk-table__cell govuk-table__cell--numeric">{{ row['govuk.sessions'].rendered }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+        </table>
+      {% endif %}
+
+
+      <h2 class="govuk-heading-m" id="respondents-filter">
+        Allowing user-input to filter an Explore
+      </h2>
+
+      <p>
+        You can filter on as many dimensions as you need to.
+        You would just need to hook up the plumbing to get, sanitise and pass through user input.
+      </p>
+      <pre><code>
+        const query = await sdk.run_inline_query({
+          result_format: 'json_detail',
+          body: {
+            model: 'govuk',
+            view: 'polling_question_response_selections',
+            fields: ['polling_survey_waves.start_quarter', 'polling_survey_responses.count_survey_responses'],
+            sort: ['polling_survey_waves.start_quarter'],
+            filters: {'polling_survey_responses.age_group': filterAgeValueFromDropdown}, <-- Just need to pass the correct values
+            total: false
+          }
+        });
+      </code></pre>
+
+      <form action="/using-an-explore#respondents-filter" method="GET">
+        <div class="govuk-form-group">
+          <label class="govuk-label" for="age-group-select">
+            Select age group
+          </label>
+
+          <select class="govuk-select" id="age-group-select" name="age-group">
+            <option value="" selected>Select an option</option>
+            {% if pollingAgeValuesFromExplore and pollingAgeValuesFromExplore.length %}
+              {% for row in pollingAgeValuesFromExplore %}
+                <option value="{{ row['polling_survey_responses.age_group'].filterable_value }}">
+                  {{ row['polling_survey_responses.age_group'].value }}
+                </option>
+
+              {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+        <button class="govuk-button" data-module="govuk-button">
+          Filter results
+        </button>
+      </form>
+
+      <div id="chart-container" class="chart-container" style="margin-bottom: 40px; position: relative; height:40vh; width:80vw">
+        <canvas id="respondentsChart"></canvas>
+      </div>
+
+      <div id="table-container">
+        <table class="govuk-table" data-module="chart-from-table" data-chart-canvas-id="respondentsChart">
+            <thead class="govuk-table__head">
+              <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Date</th>
+                <th scope="col" class="govuk-table__header govuk-table__header--numeric">Respondents</th>
+              </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+              {% for row in pollingSeriesFromExplore %}
+                <tr class="govuk-table__row">
+                  <td class="govuk-table__cell">{{ row['polling_survey_waves.start_quarter'].value }}</td>
+                  <td class="govuk-table__cell govuk-table__cell--numeric">{{ row['polling_survey_responses.count_survey_responses'].value }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+        </table>
+      </div>
+
+      <button id="toggle-view-button" class="govuk-button govuk-button--secondary" style="display: none;">Show table</button>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const table = document.querySelector('[data-module="chart-from-table"]');
+      if (!table) return;
+
+      const canvasId = table.getAttribute('data-chart-canvas-id');
+      const ctx = document.getElementById(canvasId).getContext('2d');
+
+      const tableRows = table.querySelectorAll('tbody tr');
+      const labels = [];
+      const data = [];
+
+      tableRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        labels.push(cells[0].textContent);
+        data.push(parseFloat(cells[1].textContent.replace(/,/g, '')));
+      });
+
+      const respondentsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Respondents',
+            data: data,
+            backgroundColor: '#1d70b8'
+          }]
+        },
+        options: { /* ... options ... */ }
+      });
+      
+      const chartContainer = document.getElementById('chart-container');
+      const tableContainer = document.getElementById('table-container');
+      const toggleButton = document.getElementById('toggle-view-button');
+
+      // Check if the button exists before adding a listener
+      if (toggleButton) {
+        tableContainer.style.display = 'none';
+        toggleButton.style.display = 'block';
+        
+        toggleButton.addEventListener('click', function() {
+          const isTableHidden = tableContainer.style.display === 'none';
+          if (isTableHidden) {
+            tableContainer.style.display = 'block';
+            chartContainer.style.display = 'none';
+            this.textContent = 'Show chart';
+          } else {
+            tableContainer.style.display = 'none';
+            chartContainer.style.display = 'block';
+            this.textContent = 'Show table';
+          }
+        });
+      }
+    });
+  </script>
+
+{% endblock %}
